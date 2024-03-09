@@ -1,12 +1,13 @@
 #!/bin/bash
 
-mkdir -p dist
+rm -rf dist
+mkdir dist
 
 shopt -s nullglob
-for file in build/*
+for project in build/*
 do
-	name="${file:6:-3}"
-	zip -r dist/$name.zip -j $file
+	name="${project:6}"
+	zip -r dist/$name.zip -j $project/index.js
 	aws lambda update-function-code --function-name $name --zip-file fileb://dist/$name.zip
 done
 shopt -u nullglob
