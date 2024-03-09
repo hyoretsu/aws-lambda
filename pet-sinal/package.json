@@ -1,0 +1,17 @@
+{
+  "name": "pet-sinal",
+  "private": true,
+  "scripts": {
+    "deploy": "rm -rf node_modules lambda.zip && bun i -p && zip -r lambda.zip node_modules index.mjs && bun i && aws lambda update-function-code --function-name pet-sinal --zip-file fileb://lambda.zip"
+  },
+  "dependencies": {
+    "@hyoretsu/utils": "^1.10.1",
+    "date-fns": "^3.3.1",
+    "jsdom": "^24.0.0"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.529.1",
+    "@aws-sdk/client-sns": "^3.529.1",
+    "@types/aws-lambda": "^8.10.136"
+  }
+}

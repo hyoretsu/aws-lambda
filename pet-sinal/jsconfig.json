@@ -1,0 +1,11 @@
+{
+	"compilerOptions": {
+		"allowJs": true,
+		"checkJs": true,
+		"downlevelIteration": true,
+		"lib": ["ESNext"],
+		"moduleResolution": "node",
+		"noEmit": true,
+		"skipLibCheck": true
+	}
+}
