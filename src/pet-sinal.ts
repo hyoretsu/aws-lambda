@@ -1,14 +1,20 @@
-import { ComparisonOperator, DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 import { capitalize } from "@hyoretsu/utils";
+import type { EventBridgeEvent, Handler } from "aws-lambda";
 import { format, isSameMonth, parse, setDefaultOptions } from "date-fns";
 import { ptBR as locale } from "date-fns/locale";
 import { JSDOM } from "jsdom";
 
 setDefaultOptions({ locale });
 
-/** @type {import("aws-lambda").Handler<import("aws-lambda").EventBridgeEvent>} */
-export async function handler(event, context) {
+interface Transaction {
+	date: Date,
+	order: number,
+	value: number,
+}
+
+export const handler: Handler<EventBridgeEvent<"Scheduled Event", {}>> = async (event, context) => {
 	const today = new Date();
 
 	const dynamoDbClient = new DynamoDBClient({ region: "us-east-2" });
@@ -17,11 +23,10 @@ export async function handler(event, context) {
 	const alreadySent = await dynamoDbClient.send(new QueryCommand({
 		KeyConditions: {
 			fe263071497d7b59a3ddd846303b183dd4e282af0f2a57c80201d43e3402ea04: {
-				ComparisonOperator: ComparisonOperator.EQ,
+				ComparisonOperator: "EQ",
 				AttributeValueList: [{ S: entryKey }]
 			}
 		},
-		// FilterExpression: `fe263071497d7b59a3ddd846303b183dd4e282af0f2a57c80201d43e3402ea04 = "pet-${today.getMonth()}-${today.getFullYear()}"`,
 		TableName: "BolsasEstudantis",
 	}));
 
@@ -34,11 +39,11 @@ export async function handler(event, context) {
 	);
 
 	const pageContent = new JSDOM(await fndePage.text()).window.document;
-	const transactionElements = [...pageContent.querySelector("#programa0 tbody").children];
+	const transactionElements = [...pageContent.querySelector("#programa0 tbody")!.children];
 
-	const transactions = [];
+	const transactions: Transaction[] = [];
 	for (const transaction of transactionElements) {
-		const [date, order, value] = [...transaction.children].map(field => field.innerHTML);
+		const [date, order, value] = [...transaction.children].map(field => field.innerHTML as string);
 		const parsedDate = parse(date, "dd/MMM/yy", new Date())
 
 		if (!isSameMonth(parsedDate, today)) {
@@ -72,7 +77,7 @@ export async function handler(event, context) {
 		const snsClient = new SNSClient({ region: "us-east-2" });
 		await snsClient.send(new PublishCommand({
 			Message: "Elas devem cair em 5 dias úteis, contando a partir de hoje.",
-			Subject: `[PET] Bolsas de ${capitalize(format(today, 'MMM'))}/${format(today, "yy")} enviadas`,
+			Subject: `[PET] As bolsas de ${capitalize(format(today, 'MMM'))}/${format(today, "yy")} foram enviadas`,
 			TopicArn: "arn:aws:sns:us-east-2:182273057205:pet-bolsas",
 		}));
 	}

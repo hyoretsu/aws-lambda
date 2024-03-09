@@ -1,11 +1,9 @@
 {
 	"compilerOptions": {
-		"allowJs": true,
-		"checkJs": true,
 		"downlevelIteration": true,
-		"lib": ["ESNext"],
+		"lib": ["DOM", "ESNext"],
 		"moduleResolution": "node",
-		"noEmit": true,
+		"resolveJsonModule": true,
 		"skipLibCheck": true
 	}
 }
