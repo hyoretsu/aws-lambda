@@ -77,7 +77,7 @@ export const handler: Handler<EventBridgeEvent<"Scheduled Event", {}>> = async (
 		const snsClient = new SNSClient({ region: "us-east-2" });
 		await snsClient.send(new PublishCommand({
 			Message: "Elas devem cair em 5 dias úteis, contando a partir de hoje.",
-			Subject: `[PET] As bolsas de ${capitalize(format(today, 'MMM'))}/${format(today, "yy")} foram enviadas`,
+			Subject: `[PET] Bolsas de ${capitalize(format(today, 'MMM'))}/${format(today, "yy")} enviadas!`,
 			TopicArn: "arn:aws:sns:us-east-2:182273057205:pet-bolsas",
 		}));
 	}
