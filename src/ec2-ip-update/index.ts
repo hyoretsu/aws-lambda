@@ -1,14 +1,16 @@
 import { DescribeInstancesCommand, EC2Client } from "@aws-sdk/client-ec2";
 import type { Tag } from "@aws-sdk/client-ec2";
-import { ChangeResourceRecordSetsCommand, Route53Client, RRType } from "@aws-sdk/client-route-53";
-import { EventBridgeEvent, Handler } from "aws-lambda";
+import { ChangeResourceRecordSetsCommand, type RRType, Route53Client } from "@aws-sdk/client-route-53";
+import type { EventBridgeEvent, Handler } from "aws-lambda";
 
 interface EC2StateChangeNotificationDetail {
 	"instance-id": string;
-	state: string
+	state: string;
 }
 
-export const handler: Handler<EventBridgeEvent<"EC2 Instance State-change Notification", EC2StateChangeNotificationDetail>> = async event => {
+export const handler: Handler<
+	EventBridgeEvent<"EC2 Instance State-change Notification", EC2StateChangeNotificationDetail>
+> = async event => {
 	const ec2Client = new EC2Client({
 		region: process.env.EC2_REGION || "us-east-1",
 	});
@@ -53,10 +55,10 @@ export const handler: Handler<EventBridgeEvent<"EC2 Instance State-change Notifi
 							Type,
 							ResourceRecords: [{ Value: Type === "AAAA" ? Ipv6Address : PublicIpAddress }],
 							TTL,
-						}
-					}
-				]
-			}
-		})
+						},
+					},
+				],
+			},
+		}),
 	);
 };

@@ -9,33 +9,38 @@ import { JSDOM } from "jsdom";
 setDefaultOptions({ locale });
 
 interface Transaction {
-	date: Date,
-	order: number,
-	value: number,
+	date: Date;
+	order: number;
+	value: number;
 }
 
-export const handler: Handler<EventBridgeEvent<"Scheduled Event", {}>> = async (event, context) => {
+export const handler: Handler<EventBridgeEvent<"Scheduled Event", Record<string, any>>> = async (
+	event,
+	context,
+) => {
 	const today = new Date();
 
 	const dynamoDbClient = new DynamoDBClient({ region: "us-east-2" });
 	const entryKey = `pet-${today.getMonth()}-${today.getFullYear()}`;
 
-	const alreadySent = await dynamoDbClient.send(new QueryCommand({
-		KeyConditions: {
-			fe263071497d7b59a3ddd846303b183dd4e282af0f2a57c80201d43e3402ea04: {
-				ComparisonOperator: "EQ",
-				AttributeValueList: [{ S: entryKey }]
-			}
-		},
-		TableName: "BolsasEstudantis",
-	}));
+	const alreadySent = await dynamoDbClient.send(
+		new QueryCommand({
+			KeyConditions: {
+				fe263071497d7b59a3ddd846303b183dd4e282af0f2a57c80201d43e3402ea04: {
+					ComparisonOperator: "EQ",
+					AttributeValueList: [{ S: entryKey }],
+				},
+			},
+			TableName: "BolsasEstudantis",
+		}),
+	);
 
 	if (alreadySent.Count === 1) {
 		return;
 	}
 
 	const fndePage = await fetch(
-		"https://www.fnde.gov.br/sigefweb/index.php/liberacoes/resultado-entidade/ano/2024/programa/PS/cnpj/00000000000191"
+		"https://www.fnde.gov.br/sigefweb/index.php/liberacoes/resultado-entidade/ano/2024/programa/PS/cnpj/00000000000191",
 	);
 
 	const pageContent = new JSDOM(await fndePage.text()).window.document;
@@ -44,7 +49,7 @@ export const handler: Handler<EventBridgeEvent<"Scheduled Event", {}>> = async (
 	const transactions: Transaction[] = [];
 	for (const transaction of transactionElements) {
 		const [date, order, value] = [...transaction.children].map(field => field.innerHTML as string);
-		const parsedDate = parse(date, "dd/MMM/yy", new Date())
+		const parsedDate = parse(date, "dd/MMM/yy", new Date());
 
 		if (!isSameMonth(parsedDate, today)) {
 			continue;
@@ -54,33 +59,35 @@ export const handler: Handler<EventBridgeEvent<"Scheduled Event", {}>> = async (
 			date: parsedDate,
 			order: Number(order),
 			value: Number(value.replaceAll(".", "").replace(",", ".")),
-		})
-	};
-	transactions.sort(
-		(transactionA, transactionB) => transactionA.order > transactionB.order ? 1 : -1
-	)
+		});
+	}
+	transactions.sort((transactionA, transactionB) => (transactionA.order > transactionB.order ? 1 : -1));
 
 	const creditTransaction = transactions.find(transaction => transaction.value > 1000000);
 
 	if (creditTransaction) {
-		dynamoDbClient.send(new PutItemCommand({
-			Item: {
-				fe263071497d7b59a3ddd846303b183dd4e282af0f2a57c80201d43e3402ea04: {
-					S: entryKey,
+		dynamoDbClient.send(
+			new PutItemCommand({
+				Item: {
+					fe263071497d7b59a3ddd846303b183dd4e282af0f2a57c80201d43e3402ea04: {
+						S: entryKey,
+					},
 				},
-			},
-			TableName: "BolsasEstudantis",
-		}));
+				TableName: "BolsasEstudantis",
+			}),
+		);
 
 		today.setMonth(today.getMonth() - 1);
 
 		const snsClient = new SNSClient({ region: "us-east-2" });
-		await snsClient.send(new PublishCommand({
-			Message: "Elas devem cair em 5 dias úteis, contando a partir de hoje.",
-			Subject: `[PET] Bolsas de ${capitalize(format(today, 'MMM'))}/${format(today, "yy")} enviadas!`,
-			TopicArn: "arn:aws:sns:us-east-2:182273057205:pet-bolsas",
-		}));
+		await snsClient.send(
+			new PublishCommand({
+				Message: "Elas devem cair em 5 dias úteis, contando a partir de hoje.",
+				Subject: `[PET] Bolsas de ${capitalize(format(today, "MMM"))}/${format(today, "yy")} enviadas!`,
+				TopicArn: "arn:aws:sns:us-east-2:182273057205:pet-bolsas",
+			}),
+		);
 	}
-}
+};
 
 // handler();

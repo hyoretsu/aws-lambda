@@ -5,6 +5,7 @@
 		"deploy": "bun run build && ./upload.sh"
 	},
 	"lint-staged": {
+		"**/*.(js|jsx|json|jsonc|ts|tsx)": ["biome check --apply"],
 		"src/**/*.ts": ["bun run deploy"]
 	},
 	"dependencies": {
@@ -12,6 +13,7 @@
 		"@aws-sdk/client-ec2": "^3.529.1",
 		"@aws-sdk/client-route-53": "^3.529.1",
 		"@aws-sdk/client-sns": "^3.529.1",
+		"@biomejs/biome": "^1.6.0",
 		"@hyoretsu/utils": "^1.10.1",
 		"date-fns": "^3.3.1",
 		"jsdom": "^24.0.0"
