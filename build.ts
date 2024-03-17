@@ -1,4 +1,4 @@
-import { readdir, rmdir } from 'node:fs/promises';
+import { readdir, rmdir } from "node:fs/promises";
 import { dependencies } from "./package.json";
 
 async function execute() {
@@ -8,8 +8,16 @@ async function execute() {
 
 	const start = Date.now();
 
+	const srcFiles = await readdir("./src");
+
 	await Bun.build({
-		entrypoints: (await readdir("./src")).map(entry => `./src/${entry}`),
+		entrypoints: srcFiles.reduce<string[]>((arr, content) => {
+			if (content.match(/\.ts$/g)?.length > 0) {
+				arr.push(`./src/${content}`);
+			}
+
+			return arr;
+		}, []),
 		external: [...Object.keys(dependencies).filter(pkg => pkg.startsWith("@aws-sdk"))],
 		minify: true,
 		naming: "[dir]/[name]/index.[ext]",
