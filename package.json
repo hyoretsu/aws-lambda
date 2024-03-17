@@ -1,29 +1,30 @@
 {
-  "name": "aws-lambda",
-  "scripts": {
-    "build": "bun build.ts",
-    "deploy": "bun run build && ./upload.sh"
-  },
-  "lint-staged": {
-    "**/*.(js|jsx|json|jsonc|ts|tsx)": ["biome check --apply"],
-    "src/*.ts": ["bun run deploy"]
-  },
-  "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.529.1",
-    "@aws-sdk/client-ec2": "^3.529.1",
-    "@aws-sdk/client-route-53": "^3.529.1",
-    "@aws-sdk/client-sns": "^3.529.1",
-    "@biomejs/biome": "^1.6.0",
-    "@hyoretsu/utils": "^1.10.1",
-    "date-fns": "^3.3.1",
-    "jsdom": "^24.0.0"
-  },
-  "devDependencies": {
-    "@types/aws-lambda": "^8.10.136",
-    "@types/bun": "^1.0.8",
-    "@types/jsdom": "^21.1.6",
-    "@types/node": "^20.11.26",
-    "tsup": "^8.0.2",
-    "typescript": "^5.4.2"
-  }
+	"name": "aws-lambda",
+	"scripts": {
+		"build": "bun build.ts",
+		"deploy": "bun run build && ./upload.sh"
+	},
+	"lint-staged": {
+		"**/*.(js|jsx|json|jsonc|ts|tsx)": ["biome check --apply"],
+		"src/*.ts": ["bun run deploy"]
+	},
+	"dependencies": {
+		"@aws-sdk/client-dynamodb": "^3.529.1",
+		"@aws-sdk/client-ec2": "^3.529.1",
+		"@aws-sdk/client-route-53": "^3.529.1",
+		"@aws-sdk/client-scheduler": "^3.529.1",
+		"@aws-sdk/client-sns": "^3.529.1",
+		"@hyoretsu/utils": "^1.10.1",
+		"date-fns": "^3.3.1",
+		"jsdom": "^24.0.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.6.1",
+		"@types/aws-lambda": "^8.10.136",
+		"@types/bun": "^1.0.8",
+		"@types/jsdom": "^21.1.6",
+		"@types/node": "^20.11.26",
+		"tsup": "^8.0.2",
+		"typescript": "^5.4.2"
+	}
 }

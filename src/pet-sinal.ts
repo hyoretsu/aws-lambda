@@ -1,8 +1,18 @@
 import { DynamoDBClient, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
+import { CreateScheduleCommand, SchedulerClient } from "@aws-sdk/client-scheduler";
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 import { capitalize } from "@hyoretsu/utils";
-import type { EventBridgeEvent, Handler } from "aws-lambda";
-import { format, isSameMonth, parse, setDefaultOptions } from "date-fns";
+import type { Handler, ScheduledEvent } from "aws-lambda";
+import {
+	addBusinessDays,
+	addDays,
+	addMonths,
+	differenceInDays,
+	format,
+	isSameMonth,
+	parse,
+	setDefaultOptions,
+} from "date-fns";
 import { ptBR as locale } from "date-fns/locale";
 import { JSDOM } from "jsdom";
 
@@ -14,10 +24,7 @@ interface Transaction {
 	value: number;
 }
 
-export const handler: Handler<EventBridgeEvent<"Scheduled Event", Record<string, any>>> = async (
-	event,
-	context,
-) => {
+export const handler: Handler<ScheduledEvent> = async (event, context) => {
 	const today = new Date();
 
 	const dynamoDbClient = new DynamoDBClient({ region: "us-east-2" });
@@ -40,7 +47,7 @@ export const handler: Handler<EventBridgeEvent<"Scheduled Event", Record<string,
 	}
 
 	const fndePage = await fetch(
-		"https://www.fnde.gov.br/sigefweb/index.php/liberacoes/resultado-entidade/ano/2024/programa/PS/cnpj/00000000000191",
+		`https://www.fnde.gov.br/sigefweb/index.php/liberacoes/resultado-entidade/ano/${today.getFullYear()}/programa/PS/cnpj/00000000000191`,
 	);
 
 	const pageContent = new JSDOM(await fndePage.text()).window.document;
@@ -66,7 +73,7 @@ export const handler: Handler<EventBridgeEvent<"Scheduled Event", Record<string,
 	const creditTransaction = transactions.find(transaction => transaction.value > 1000000);
 
 	if (creditTransaction) {
-		dynamoDbClient.send(
+		await dynamoDbClient.send(
 			new PutItemCommand({
 				Item: {
 					fe263071497d7b59a3ddd846303b183dd4e282af0f2a57c80201d43e3402ea04: {
@@ -77,13 +84,39 @@ export const handler: Handler<EventBridgeEvent<"Scheduled Event", Record<string,
 			}),
 		);
 
-		today.setMonth(today.getMonth() - 1);
+		const { date } = creditTransaction;
+
+		const schedulerClient = new SchedulerClient({ region: "us-east-2" });
+		const StartDate = addBusinessDays(date, 4);
+		const EndDate = addDays(StartDate, 1);
+		await schedulerClient.send(
+			new CreateScheduleCommand({
+				Name: "pet-movel-hourly",
+				Description: "Runs 'pet-movel' Lambda function every hour 4 business days from now.",
+				ActionAfterCompletion: "DELETE",
+				ScheduleExpression: "rate(1 hours)",
+				StartDate,
+				EndDate,
+				FlexibleTimeWindow: {
+					Mode: "OFF",
+				},
+				Target: {
+					Arn: "arn:aws:lambda:us-east-2:182273057205:function:pet-movel",
+					RoleArn: "arn:aws:iam::182273057205:role/Amazon_EventBridge",
+				},
+			}),
+		);
 
 		const snsClient = new SNSClient({ region: "us-east-2" });
 		await snsClient.send(
 			new PublishCommand({
-				Message: "Elas devem cair em 5 dias úteis, contando a partir de hoje.",
-				Subject: `[PET] Bolsas de ${capitalize(format(today, "MMM"))}/${format(today, "yy")} enviadas!`,
+				Message: `Elas devem cair em ${
+					5 - differenceInDays(today, date)
+				} dias úteis, contando a partir de hoje.`,
+				Subject: `[PET] Bolsas de ${capitalize(format(addMonths(date, -1), "MMM"))}/${format(
+					date,
+					"yy",
+				)} enviadas!`,
 				TopicArn: "arn:aws:sns:us-east-2:182273057205:pet-bolsas",
 			}),
 		);
