@@ -1,7 +1,9 @@
 {
 	"compilerOptions": {
+		"allowSyntheticDefaultImports": true,
 		"checkJs": true,
 		"downlevelIteration": true,
+		"esModuleInterop": true,
 		"lib": ["DOM", "ESNext"],
 		"moduleResolution": "node",
 		"resolveJsonModule": true,
