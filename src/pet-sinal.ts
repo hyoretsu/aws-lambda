@@ -1,26 +1,40 @@
 import { DynamoDBClient, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { CreateScheduleCommand, SchedulerClient } from "@aws-sdk/client-scheduler";
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
+import { capitalize } from "@hyoretsu/utils";
 import type { Handler, ScheduledEvent } from "aws-lambda";
-import {
-	addBusinessDays,
-	addDays,
-	addMonths,
-	differenceInDays,
-	format,
-	isSameMonth,
-	parse,
-	setDefaultOptions,
-} from "date-fns";
-import { ptBR as locale } from "date-fns/locale";
-import { JSDOM } from "jsdom";
-
-setDefaultOptions({ locale });
+import { addBusinessDays, addDays, addMonths, differenceInDays, isSameMonth } from "date-fns";
+import { parse } from "node-html-parser";
 
 interface Transaction {
 	date: Date;
 	order: number;
 	value: number;
+}
+
+function parseDate(str: string): Date {
+	const [day, month, year] = str.split("/");
+
+	const monthObj = {
+		JAN: 0,
+		FEV: 1,
+		MAR: 2,
+		ABR: 3,
+		MAI: 4,
+		JUN: 5,
+		JUL: 6,
+		AGO: 7,
+		SET: 8,
+		OUT: 9,
+		NOV: 10,
+		DEZ: 11,
+	};
+
+	return new Date(
+		Math.trunc(new Date().getFullYear() / 100) * 100 + Number(year),
+		monthObj[month],
+		Number(day),
+	);
 }
 
 export const handler: Handler<ScheduledEvent> = async (event, context) => {
@@ -49,13 +63,16 @@ export const handler: Handler<ScheduledEvent> = async (event, context) => {
 		`https://www.fnde.gov.br/sigefweb/index.php/liberacoes/resultado-entidade/ano/${today.getFullYear()}/programa/PS/cnpj/00000000000191`,
 	);
 
-	const pageContent = new JSDOM(await fndePage.text()).window.document;
-	const transactionElements = [...pageContent.querySelector("#programa0 tbody")!.children];
+	const pageContent = parse(await fndePage.text());
+	const transactionElements = pageContent
+		.querySelector("#programa0 tbody")!
+		.childNodes.filter(node => node.nodeType !== 3)
+		.slice(0, -1);
 
 	const transactions: Transaction[] = [];
 	for (const transaction of transactionElements) {
-		const [date, order, value] = [...transaction.children].map(field => field.innerHTML as string);
-		const parsedDate = parse(date, "dd/MMM/yy", new Date());
+		const [date, order, value] = transaction.childNodes.map(field => field.text);
+		const parsedDate = parseDate(date);
 
 		if (!isSameMonth(parsedDate, today)) {
 			continue;
@@ -112,7 +129,9 @@ export const handler: Handler<ScheduledEvent> = async (event, context) => {
 				Message: `Elas devem cair em ${
 					5 - differenceInDays(today, date)
 				} dias úteis, contando a partir de hoje.`,
-				Subject: `[PET] Bolsas de ${format(addMonths(date, -1), "MMM")}/${format(date, "yy")} enviadas!`,
+				Subject: `[PET] Bolsas de ${capitalize(
+					new Intl.DateTimeFormat("pt-BR", { month: "short" }).format(addMonths(date, -1)).slice(0, -1),
+				)}/${String(date.getFullYear()).substring(2)} enviadas!`,
 				TopicArn: "arn:aws:sns:us-east-2:182273057205:pet-bolsas",
 			}),
 		);
