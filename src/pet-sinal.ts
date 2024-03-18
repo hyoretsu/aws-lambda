@@ -1,7 +1,6 @@
 import { DynamoDBClient, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { CreateScheduleCommand, SchedulerClient } from "@aws-sdk/client-scheduler";
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
-import { capitalize } from "@hyoretsu/utils";
 import type { Handler, ScheduledEvent } from "aws-lambda";
 import {
 	addBusinessDays,
@@ -113,10 +112,7 @@ export const handler: Handler<ScheduledEvent> = async (event, context) => {
 				Message: `Elas devem cair em ${
 					5 - differenceInDays(today, date)
 				} dias úteis, contando a partir de hoje.`,
-				Subject: `[PET] Bolsas de ${capitalize(format(addMonths(date, -1), "MMM"))}/${format(
-					date,
-					"yy",
-				)} enviadas!`,
+				Subject: `[PET] Bolsas de ${format(addMonths(date, -1), "MMM")}/${format(date, "yy")} enviadas!`,
 				TopicArn: "arn:aws:sns:us-east-2:182273057205:pet-bolsas",
 			}),
 		);
