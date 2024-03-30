@@ -104,7 +104,6 @@ export const handler: Handler<ScheduledEvent> = async (event, context) => {
 
 		const schedulerClient = new SchedulerClient({ region: "us-east-2" });
 		const StartDate = addBusinessDays(date, 4);
-		const EndDate = addDays(StartDate, 1);
 		await schedulerClient.send(
 			new CreateScheduleCommand({
 				Name: "pet-movel-hourly",
@@ -112,7 +111,6 @@ export const handler: Handler<ScheduledEvent> = async (event, context) => {
 				ActionAfterCompletion: "DELETE",
 				ScheduleExpression: "rate(1 hours)",
 				StartDate,
-				EndDate,
 				FlexibleTimeWindow: {
 					Mode: "OFF",
 				},

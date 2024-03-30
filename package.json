@@ -2,7 +2,8 @@
 	"name": "aws-lambda",
 	"scripts": {
 		"build": "bun build.ts",
-		"deploy": "bun run build && ./upload.sh"
+		"deploy": "bun run build && sh ./upload.sh",
+		"prepare": "git config --local core.hooksPath .githooks"
 	},
 	"lint-staged": {
 		"**/*.(js|jsx|json|jsonc|ts|tsx)": ["biome check --apply"],
