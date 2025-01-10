@@ -20,7 +20,7 @@ async function execute() {
 		}, []),
 		external: [...Object.keys(dependencies).filter(pkg => pkg.startsWith("@aws-sdk"))],
 		minify: true,
-		naming: "[dir]/[name]/index.[ext]",
+		naming: "[dir]/[name]/index.mjs",
 		outdir: "./build",
 		target: "node",
 	});
