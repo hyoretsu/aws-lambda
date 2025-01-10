@@ -51,6 +51,7 @@ export const handler: Handler<SESEvent> = async (event, context) => {
 			Destinations,
 			Source: sourceEmail,
 			RawMessage: {
+				// @ts-expect-error
 				Data: await mailComposer.build(),
 			},
 		}),
