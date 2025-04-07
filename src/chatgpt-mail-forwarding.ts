@@ -7,7 +7,6 @@ import MailComposer from "nodemailer/lib/mail-composer";
 const sourceEmail = "chatgpt@hyoretsu.com";
 const emails = new Map([
 	["Aran Leite", "hyoretsu@gmail.com"],
-	["Breno Amigo", "gabrielpg.at@gmail.com"],
 	["Breno Lima", "brenohslima@gmail.com"],
 	["Breno Irmão", "lakerdantas96@gmail.com"],
 	["Gabriel Lima", "gabrielllaraujo735@gmail.com"],
@@ -18,7 +17,7 @@ const emails = new Map([
 ]);
 
 export const handler: Handler<SESEvent> = async (event, context) => {
-	const { messageId } = event.Records[0].ses.mail;
+	const { messageId } = (event.Records[0].ses || JSON.parse(event.Records[0].Sns.Message)).mail;
 	const Destinations = [...emails.values()];
 
 	const s3Client = new S3Client({
